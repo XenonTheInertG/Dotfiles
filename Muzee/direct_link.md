@@ -1,3 +1,3 @@
 ```bash
-https://raw.githubusercontent.com/XenonTheInertG/logos-stuffs/main/assets/icon.gif
+https://raw.githubusercontent.com/XenonTheInertG/Dotfiles/main/Muzee/icon.gif
 ```
