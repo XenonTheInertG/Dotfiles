@@ -9,7 +9,7 @@
 #
 
 GIT_USER_NAME="XenonTheInertG"
-GIT_USER_EMAIL="XenonTheInertG@outlook.com"
+GIT_USER_EMAIL="xenontheinertg@outlook.com"
 
 packageinstall() {
 	echo "Installing package(s): $1"
@@ -24,11 +24,11 @@ packageinstall() {
 }
 
 # Copy every file from the repo to the current home folder
-for file in .bashrc-overlay .xprofile; do
+for file in .bashrc-overlay .gitignore .xprofile README.md setup.sh; do
 	cp "${file}" ~/
 done
 
-for dir in .fonts .ssh bin; do
+for dir in .fonts .git .ssh bin; do
 	cp -R "${dir}" ~/
 done
 
