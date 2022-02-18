@@ -241,7 +241,7 @@ MIN_GIT_VERSION = (1, 7, 2)      # minimum supported git version
 repodir = '.repo'                # name of repo's private directory
 S_repo = 'repo'                  # special repo repository
 S_manifests = 'manifests'        # special manifest repository
-REPO_MAIN = S_repo + '/main.py'  # main script
+REPO_MAIN = f'{S_repo}/main.py'
 GITC_CONFIG_FILE = '/gitc/.config'
 GITC_FS_ROOT_DIR = '/gitc/manifest-rw/'
 
@@ -485,8 +485,7 @@ def get_gitc_manifest_dir():
     try:
       with open(GITC_CONFIG_FILE, 'r') as gitc_config:
         for line in gitc_config:
-          match = re.match('gitc_dir=(?P<gitc_manifest_dir>.*)', line)
-          if match:
+          if match := re.match('gitc_dir=(?P<gitc_manifest_dir>.*)', line):
             _gitc_manifest_dir = match.group('gitc_manifest_dir')
     except IOError:
       pass
@@ -545,10 +544,7 @@ def check_repo_rev(dst, rev, repo_verify=True, quiet=False):
   if not quiet and not remote_ref.startswith('refs/heads/'):
     print('warning: repo is not tracking a remote branch, so it will not '
           'receive updates', file=sys.stderr)
-  if do_verify:
-    rev = verify_rev(dst, remote_ref, local_rev, quiet)
-  else:
-    rev = local_rev
+  rev = verify_rev(dst, remote_ref, local_rev, quiet) if do_verify else local_rev
   return (remote_ref, rev)
 
 
@@ -557,17 +553,16 @@ def _Init(args, gitc_init=False):
   """
   parser = GetParser(gitc_init=gitc_init)
   opt, args = parser.parse_args(args)
+  if args and not opt.manifest_url:
+    opt.manifest_url = args.pop(0)
   if args:
-    if not opt.manifest_url:
-      opt.manifest_url = args.pop(0)
-    if args:
-      parser.print_usage()
-      sys.exit(1)
+    parser.print_usage()
+    sys.exit(1)
   opt.quiet = opt.output_mode is False
   opt.verbose = opt.output_mode is True
 
   if opt.clone_bundle is None:
-    opt.clone_bundle = False if opt.partial_clone else True
+    opt.clone_bundle = not opt.partial_clone
 
   url = opt.repo_url or REPO_URL
   rev = opt.repo_rev or REPO_REV
@@ -698,7 +693,7 @@ def SetGitTrace2ParentSid(env=None):
 
   # If it's already set, then append ourselves.
   if KEY in env:
-    value = env[KEY] + '/' + value
+    value = f'{env[KEY]}/{value}'
 
   _setenv(KEY, value, env=env)
 
@@ -800,8 +795,6 @@ def _GetRepoConfig(name):
 
 
 def _InitHttp():
-  handlers = []
-
   mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
   try:
     import netrc
@@ -812,15 +805,18 @@ def _InitHttp():
       mgr.add_password(p[1], 'https://%s/' % host, p[0], p[2])
   except Exception:
     pass
-  handlers.append(urllib.request.HTTPBasicAuthHandler(mgr))
-  handlers.append(urllib.request.HTTPDigestAuthHandler(mgr))
-
+  handlers = list((
+      urllib.request.HTTPBasicAuthHandler(mgr),
+      urllib.request.HTTPDigestAuthHandler(mgr),
+  ))
   if 'http_proxy' in os.environ:
     url = os.environ['http_proxy']
     handlers.append(urllib.request.ProxyHandler({'http': url, 'https': url}))
   if 'REPO_CURL_VERBOSE' in os.environ:
-    handlers.append(urllib.request.HTTPHandler(debuglevel=1))
-    handlers.append(urllib.request.HTTPSHandler(debuglevel=1))
+    handlers.extend((
+        urllib.request.HTTPHandler(debuglevel=1),
+        urllib.request.HTTPSHandler(debuglevel=1),
+    ))
   urllib.request.install_opener(urllib.request.build_opener(*handlers))
 
 
@@ -833,9 +829,8 @@ def _Fetch(url, cwd, src, quiet, verbose):
     cmd.append('--progress')
   elif not verbose:
     err = subprocess.PIPE
-  cmd.append(src)
-  cmd.append('+refs/heads/*:refs/remotes/origin/*')
-  cmd.append('+refs/tags/*:refs/tags/*')
+  cmd.extend((src, '+refs/heads/*:refs/remotes/origin/*',
+              '+refs/tags/*:refs/tags/*'))
   run_git(*cmd, stderr=err, capture_output=False, cwd=cwd)
 
 
@@ -847,8 +842,7 @@ def _DownloadBundle(url, cwd, quiet, verbose):
   ret = run_git('config', '--get-regexp', 'url.*.insteadof', cwd=cwd,
                 check=False)
   for line in ret.stdout.splitlines():
-    m = re.compile(r'^url\.(.*)\.insteadof (.*)$').match(line)
-    if m:
+    if m := re.compile(r'^url\.(.*)\.insteadof (.*)$').match(line):
       new_url = m.group(1)
       old_url = m.group(2)
       if url.startswith(old_url):
@@ -988,8 +982,7 @@ def verify_rev(cwd, remote_ref, rev, quiet):
   ret = run_git('describe', rev, cwd=cwd)
   cur = ret.stdout.strip()
 
-  m = re.compile(r'^(.*)-[0-9]{1,}-g[0-9a-f]{1,}$').match(cur)
-  if m:
+  if m := re.compile(r'^(.*)-[0-9]{1,}-g[0-9a-f]{1,}$').match(cur):
     cur = m.group(1)
     if not quiet:
       print(file=sys.stderr)
@@ -1053,10 +1046,7 @@ def _ExpandAlias(name):
 
   args = alias.strip().split(' ', 1)
   name = args[0]
-  if len(args) == 2:
-    args = shlex.split(args[1])
-  else:
-    args = []
+  args = shlex.split(args[1]) if len(args) == 2 else []
   return name, args
 
 
@@ -1067,7 +1057,7 @@ def _ParseArguments(args):
 
   for i in range(len(args)):
     a = args[i]
-    if a == '-h' or a == '--help':
+    if a in ['-h', '--help']:
       opt.help = True
     elif a == '--version':
       opt.version = True
@@ -1214,8 +1204,7 @@ def _Version():
     print(uname)
   else:
     print('OS %s %s (%s)' % (uname.system, uname.release, uname.version))
-    print('CPU %s (%s)' %
-          (uname.machine, uname.processor if uname.processor else 'unknown'))
+    print(('CPU %s (%s)' % (uname.machine, uname.processor or 'unknown')))
   print('Bug reports:', BUG_URL)
   sys.exit(0)
 
@@ -1301,7 +1290,7 @@ def main(orig_args):
       _Version()
     if not cmd:
       _NotInstalled()
-    if cmd == 'init' or cmd == 'gitc-init':
+    if cmd in ['init', 'gitc-init']:
       if my_git:
         _SetDefaultsTo(my_git)
       try:
@@ -1323,8 +1312,7 @@ def main(orig_args):
     print("fatal: unable to find repo entry point", file=sys.stderr)
     sys.exit(1)
 
-  reqs = Requirements.from_dir(os.path.dirname(repo_main))
-  if reqs:
+  if reqs := Requirements.from_dir(os.path.dirname(repo_main)):
     reqs.assert_all()
 
   ver_str = '.'.join(map(str, VERSION))
