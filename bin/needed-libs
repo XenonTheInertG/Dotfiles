@@ -1,3 +1,0 @@
-#!/bin/bash
-
-readelf -d "${1}" | grep NEEDED | sed 's/.*\[\(.*\)\].*/\1/'
