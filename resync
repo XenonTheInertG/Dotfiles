@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+
+
+import sys
+import os
+
+exit = sys.exit
+#os.system = lambda x: print(x)
+
+cwd = os.getcwd()
+
+manifest_link = 'git://github.com/Bianca-Project/android.git'
+manifest_branch = 'q'
+
+path_link = 'https://github.com/LineageOS/'
+path_branch ='lineage-17.1'
+path_folder = [
+  'build/soong',
+  'frameworks/base',
+  'packages/apps/Settings',
+  'vendor/lineage'
+  ]
+path_repo = [
+  'android_build_soong',
+  'android_frameworks_base',
+  'android_packages_apps_Settings',
+  'android_vendor_lineage'
+  ]
+
+def resync_all():
+  ret = os.system('repo init -u %s -b %s'%(manifest_link, manifest_branch))
+  # if ret is not None: exit(1)
+  os.system('repo sync -c --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune')
+
+def merge(val):
+  x = 0
+  for i in path_folder:
+    if val in i:
+      folder = path_folder[x]
+      repo = path_repo[x]
+    x += 1
+
+  os.chdir(cwd + '/' + folder)
+  os.system('echo $(pwd)')
+
+  ret = os.system('git fetch {} {}'.format(path_link + repo, path_branch))
+  # if ret is not None: exit(1)
+  ret = os.system('git merge FETCH_HEAD')
+  # if ret is not None: exit(1)
+
+  os.chdir(cwd)
+
+def push(val):
+  x = 0
+  for i in path_folder:
+    if val in i:
+      folder = path_folder[x]
+      repo = path_repo[x]
+    x += 1
+
+  os.chdir(cwd + '/' + folder)
+  os.system('echo $(pwd)')
+
+  ret = os.system('git push {} {}'.format('https://github.com/Bianca-Project/' + repo, manifest_branch))
+  # if ret is not None: exit(1)
+
+  os.chdir(cwd)
+
+def tree(branch):
+  # Fetching and checkout device
+  os.chdir(cwd + '/' + 'device/xiaomi/lavender')
+  os.system('git fetch https://github.com/xenontheinertg/device_xiaomi_lavender %s'%(branch))
+  os.system('git checkout FETCH_HEAD')
+
+  # Fetching and checkout vendor
+  os.chdir(cwd + '/' + 'vendor/xiaomi/lavender')
+  os.system('git fetch https://github.com/xenontheinertg/vendor_xiaomi_lavender %s'%(branch))
+  os.system('git checkout FETCH_HEAD')
+
+  print('Done!')
+
+def show_help():
+  print('\tXenonTheInertGs Dotfiles')
+  print('Simple scripts for manage my rom\n')
+  print('Usage: resync [command] [argument]\n')
+  print('Commands:')
+  print('all\t\tResync all repo')
+  print('list\t\tList repo')
+  print('merge\t\tMerge repo from source')
+  print('push\t\tPush repo to github')
+  print('tree\t\tFetching device and vendor tree specific branch')
+  print('help\t\tShow this help')
+
+if __name__ == "__main__":
+  args = sys.argv
+
+  if len(args) == 1:
+    show_help()
+    exit(1)
+
+  elif args[1] == 'help':
+    show_help()
+
+  elif args[1] == 'all':
+    resync_all()
+
+  elif args[1] == 'list':
+    print('List repo:\n')
+    for i in path_folder:
+      print(i)
+
+  elif args[1] == 'merge':
+    if len(args) == 2:
+      print('Need more argument!')
+      exit(1)
+    merge(args[2:][0])
+
+  elif args[1] == 'push':
+    if len(args) == 2:
+      print('Need more argument!')
+      exit(1)
+    push(args[2:][0])
+
+  elif args[1] == 'tree':
+    if len(args) == 2:
+      print('Need more argument!')
+      exit(1)
+    tree(args[2:][0])
+
+  else:
+    print('Unknown command!!')
+    print('Check with command help')
+    exit(1)
