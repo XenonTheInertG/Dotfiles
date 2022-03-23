@@ -1,0 +1,48 @@
+From bc405491cb8117b364b2a5ad5a72dad5af40af57 Mon Sep 17 00:00:00 2001
+From: xenontheinertg <xenontheinertg@qmail.id>
+Date: Sat, 17 Jul 2021 03:34:57 +0000
+Subject: [PATCH] gms: cleanup some app from gms prebuilt
+
+Signed-off-by: xenontheinertg <xenontheinertg@qmail.id>
+---
+ gms-vendor.mk | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/gms-vendor.mk b/gms-vendor.mk
+index a14dacb..d2ff6f0 100644
+--- a/gms-vendor.mk
++++ b/gms-vendor.mk
+@@ -88,22 +88,16 @@ PRODUCT_PACKAGES += \
+     GoogleExtShared \
+     GooglePrintRecommendationService \
+     GooglePackageInstaller \
+-    CalculatorGooglePrebuilt \
+     CalendarGooglePrebuilt \
+-    Chrome \
+     GoogleContacts \
+     GoogleContactsSyncAdapter \
+     GoogleTTS \
+     LatinIMEGooglePrebuilt \
+     LocationHistoryPrebuilt \
+-    Maps \
+     Messages \
+     Photos \
+     PrebuiltDeskClockGoogle \
+-    PrebuiltGmail \
+     TrichromeLibrary \
+-    WebViewGoogle \
+-    YouTube \
+     AndroidAutoStubPrebuilt \
+     AndroidMigratePrebuilt \
+     CarrierServices \
+@@ -123,7 +117,6 @@ PRODUCT_PACKAGES += \
+     AndroidPlatformServices \
+     SetupWizardPrebuilt \
+     TurboPrebuilt \
+-    Velvet \
+     WellbeingPrebuilt \
+     CarrierSetup \
+     GoogleFeedback \
+-- 
+2.32.0.264.g75ae10bc75
+
